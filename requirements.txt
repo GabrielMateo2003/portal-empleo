@@ -6,3 +6,4 @@ psycopg[binary]
 supabase
 authlib
 itsdangerous
+flask
