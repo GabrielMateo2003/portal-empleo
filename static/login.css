@@ -1,0 +1,65 @@
+:root{--azul:#17103f;--magenta:#c0087b;--rosa:#e66bb0;--texto:#161224}*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:var(--azul);color:#fff}.pantalla{display:grid;grid-template-columns:39% 61%;min-height:100vh;padding:26px;gap:24px}.marca{position:relative;display:flex;flex-direction:column;justify-content:space-between;padding:28px;border-radius:18px;background:radial-gradient(#7d759b 1px,transparent 1px),linear-gradient(155deg,#24194d,#100a31);background-size:17px 17px,auto;overflow:hidden}.logo{width:210px;height:auto;object-fit:contain;filter:brightness(0) invert(1)}.mensaje{margin:auto 12px 28px;padding:30px;border:1px solid #ffffff23;border-radius:16px;background:#ffffff18;backdrop-filter:blur(5px)}.etiqueta{margin:0 0 10px;font-size:11px;font-weight:bold;letter-spacing:1.3px;color:#d4cfea}.rosa{color:var(--magenta)}h1{font-size:clamp(28px,3vw,43px);line-height:1.08;margin:0 0 18px}.mensaje>p:not(.etiqueta),.subtitulo{line-height:1.55;color:#ddd9eb}.beneficios{display:grid;gap:12px;margin-top:25px;font-size:14px}.ayuda{margin:0;padding:20px;border-radius:13px;background:#fff;color:var(--texto);font-size:14px}.ayuda a{color:#075ce7;font-weight:bold;text-decoration:none}.acceso{display:flex;flex-direction:column;justify-content:center;align-items:center;border-radius:18px;background:#fff;color:var(--texto);padding:30px}.tarjeta{width:min(470px,100%);padding:46px;border-radius:26px;box-shadow:0 4px 20px #17103f25;border:1px solid #eceaf0}.tarjeta h2{font-size:34px;margin:0 0 7px}.subtitulo{margin:0 0 30px;color:#5d596b}.boton-proveedor{display:flex;align-items:center;justify-content:center;gap:12px;margin:13px 0;padding:15px;border-radius:8px;text-decoration:none;font-weight:bold;transition:transform .15s,box-shadow .15s}.boton-proveedor:hover{transform:translateY(-2px);box-shadow:0 5px 13px #17103f24}.educativo{border:1px solid #d9c7e8;color:#3b145f;background:#fff}.demo{border:1px solid #161224;color:#fff;background:#161224;width:100%;font-size:16px}.icono-educativo{font-size:20px;color:#a60073}.icono-demo{font-size:17px}.privacidad{margin:25px 0 0;font-size:12px;line-height:1.5;color:#767181}.pie{color:#777181;font-size:12px;margin:30px 0 0}@media(max-width:850px){.pantalla{grid-template-columns:1fr;padding:0;gap:0}.marca{border-radius:0;min-height:370px}.acceso{border-radius:0;min-height:520px}.mensaje{margin-top:75px}.logo{width:180px}}
+.boton-proveedor.google {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: #fff;
+  color: #3c4043;
+  border: 1px solid #dadce0;
+  font-weight: 500;
+}
+
+.boton-proveedor.google:hover {
+  background: #f8f9fa;
+  border-color: #c6c9cd;
+}
+
+.icono-google {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+.boton-proveedor.apple {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: #000;
+  color: #fff;
+  border: 1px solid #000;
+  font-weight: 500;
+}
+
+.boton-proveedor.apple:hover {
+  background: #1a1a1a;
+}
+
+.icono-apple {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+.separador {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: #9ca3af;
+  font-size: 0.85rem;
+  margin: 0.25rem 0;
+}
+
+.separador::before,
+.separador::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: #e5e7eb;
+}
+
+.msg-error {
+  font-size: 13px;
+  color: #b91c1c;
+  text-align: center;
+  margin-top: 4px;
+}

