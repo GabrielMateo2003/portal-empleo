@@ -708,7 +708,8 @@
           final.style.display = 'block';
           window.scrollTo({ top: 0, behavior: 'smooth' });
         } else {
-          throw new Error(json.detail || 'Error al enviar la postulación.');
+          console.error('Error /postular:', JSON.stringify(json, null, 2));
+          throw new Error(formatearError(json.detail) || 'Error al enviar la postulación.');
         }
 
       } catch (err) {
