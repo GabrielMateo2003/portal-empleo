@@ -680,40 +680,87 @@
         return;
       }
 
-      const respuestas = [];
-      document.querySelectorAll('[data-pid]').forEach(el => {
-        if (el.value.trim()) {
-          respuestas.push({ pregunta_id: el.dataset.pid, respuesta: el.value.trim() });
-        }
-      });
-
-      const data = new FormData(this);
-      data.append('respuestas_json', JSON.stringify(respuestas));
-
       const btn = document.getElementById('enviar');
       btn.disabled = true;
       btn.textContent = 'Enviando…';
 
-      try {
-        const res  = await fetch('/postular', { method: 'POST', body: data });
-        const json = await res.json().catch(() => ({}));
+      const elError = document.getElementById('resultado');
+      elError.classList.remove('visible');
 
-        if (res.ok) {
-          document.getElementById('formulario').style.display = 'none';
-          document.querySelector('.stepper').style.display = 'none';
-          document.getElementById('pantalla-final').classList.add('activa');
-          document.getElementById('pantalla-final').style.display = 'block';
-        } else {
-          const el = document.getElementById('resultado');
-          el.textContent = formatearError(json.detail);
-          el.classList.add('visible');
-          btn.disabled = false;
-          btn.textContent = '🚀 Enviar postulación';
+      try {
+        const fd = new FormData(this);
+
+        // 1. Guardar postulante en Supabase
+        const postulante = {
+          nombres:         fd.get('nombres'),
+          apellidos:       fd.get('apellidos'),
+          email:           fd.get('email'),
+          telefono:        fd.get('telefono'),
+          ciudad:          fd.get('ciudad'),
+          cargo_postula:   fd.get('cargo_postula'),
+          experiencia:     fd.get('experiencia'),
+          nivel_educacion: fd.get('nivel_educacion') || null,
+          disponibilidad:  fd.get('disponibilidad'),
+          mensaje:         fd.get('mensaje'),
+          area:            fd.get('area') || null,
+        };
+
+        const resPost = await fetch(`${SUPABASE_URL}/rest/v1/postulantes`, {
+          method: 'POST',
+          headers: {
+            'apikey':        SUPABASE_ANON,
+            'Authorization': `Bearer ${SUPABASE_ANON}`,
+            'Content-Type':  'application/json',
+            'Prefer':        'return=representation'
+          },
+          body: JSON.stringify(postulante)
+        });
+
+        if (!resPost.ok) {
+          const err = await resPost.json().catch(() => ({}));
+          throw new Error(err.message || 'Error al guardar postulación');
         }
-      } catch {
-        const el = document.getElementById('resultado');
-        el.textContent = 'Error de conexión. Verifica tu internet e intenta nuevamente.';
-        el.classList.add('visible');
+
+        const [nuevoPostulante] = await resPost.json();
+        const postulante_id = nuevoPostulante.id;
+
+        // 2. Guardar respuestas a preguntas adicionales
+        const respuestas = [];
+        document.querySelectorAll('[data-pid]').forEach(el => {
+          if (el.value.trim()) {
+            respuestas.push({
+              postulante_id: postulante_id,
+              pregunta_id:   parseInt(el.dataset.pid),
+              respuesta:     el.value.trim()
+            });
+          }
+        });
+
+        if (respuestas.length > 0) {
+          await fetch(`${SUPABASE_URL}/rest/v1/respuestas`, {
+            method: 'POST',
+            headers: {
+              'apikey':        SUPABASE_ANON,
+              'Authorization': `Bearer ${SUPABASE_ANON}`,
+              'Content-Type':  'application/json',
+              'Prefer':        'return=minimal'
+            },
+            body: JSON.stringify(respuestas)
+          });
+        }
+
+        // 3. Mostrar pantalla de éxito
+        document.getElementById('formulario').style.display = 'none';
+        document.querySelector('.stepper').style.display = 'none';
+        const final = document.getElementById('pantalla-final');
+        final.classList.add('activa');
+        final.style.display = 'block';
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+
+      } catch (err) {
+        console.error('Error al enviar:', err);
+        elError.textContent = err.message || 'Error de conexión. Verifica tu internet e inténtalo nuevamente.';
+        elError.classList.add('visible');
         btn.disabled = false;
         btn.textContent = '🚀 Enviar postulación';
       }
