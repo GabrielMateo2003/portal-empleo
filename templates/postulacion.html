@@ -646,16 +646,57 @@
         </div>`;
     }
 
+    const NOMBRES_CAMPO = {
+      nombres: 'Nombres', apellidos: 'Apellidos', email: 'Correo',
+      telefono: 'Teléfono', ciudad: 'Ciudad', area: 'Área',
+      cargo_postula: 'Cargo', experiencia: 'Experiencia',
+      nivel_educacion: 'Nivel de educación', disponibilidad: 'Disponibilidad',
+      mensaje: 'Mensaje de motivación', hoja_vida: 'Hoja de vida',
+      acepta_privacidad: 'Autorización de datos', respuestas_json: 'Respuestas adicionales'
+    };
+
+    const CAMPO_PASO = {
+      nombres: 1, apellidos: 1, email: 1, telefono: 1, ciudad: 1,
+      area: 2, cargo_postula: 2, experiencia: 2, nivel_educacion: 2,
+      disponibilidad: 2, mensaje: 2, hoja_vida: 2
+    };
+
+    const MSG_CORTOS = {
+      string_too_short: (ctx) => `Debe tener al menos ${ctx?.min_length} caracteres`,
+      string_too_long:  (ctx) => `No puede superar ${ctx?.max_length} caracteres`,
+      missing:          ()    => 'Este campo es obligatorio',
+      value_error:      (_,m) => m,
+    };
+
     function formatearError(detail) {
       if (typeof detail === 'string') return detail;
-      if (Array.isArray(detail)) return detail.map(formatearError).join(' ');
-      if (detail && typeof detail === 'object') {
-        const campo = Array.isArray(detail.loc) ? detail.loc.at(-1) : '';
-        const mensaje = detail.msg || detail.message || detail.detail || detail.error;
-        if (typeof mensaje === 'string') return campo ? `${campo}: ${mensaje}` : mensaje;
-        if (mensaje) return formatearError(mensaje);
+      if (Array.isArray(detail) && detail.length) {
+        const primer = detail[0];
+        const campo = Array.isArray(primer.loc) ? primer.loc.at(-1) : '';
+        const etiqueta = NOMBRES_CAMPO[campo] || campo;
+        const tipo = primer.type || '';
+        const ctx  = primer.ctx;
+        const msgFn = MSG_CORTOS[tipo];
+        const msgBackend = primer.msg || '';
+        const msgLegible = msgFn ? msgFn(ctx, msgBackend) : msgBackend;
+
+        const paso = CAMPO_PASO[campo];
+        if (paso && paso < pasoActual) irPaso(paso);
+
+        if (detail.length === 1) return `${etiqueta}: ${msgLegible}.`;
+        return detail.map(e => {
+          const c = Array.isArray(e.loc) ? e.loc.at(-1) : '';
+          const lbl = NOMBRES_CAMPO[c] || c;
+          const fn  = MSG_CORTOS[e.type];
+          const m   = fn ? fn(e.ctx, e.msg) : (e.msg || '');
+          return `${lbl}: ${m}`;
+        }).join(' · ');
       }
-      return 'El servidor rechazó algunos datos. Revisa los campos obligatorios e inténtalo nuevamente.';
+      if (detail && typeof detail === 'object') {
+        const msg = detail.msg || detail.message || detail.detail || '';
+        return msg || 'Ocurrió un error inesperado en el servidor. Intenta nuevamente.';
+      }
+      return 'Ocurrió un error inesperado. Intenta nuevamente.';
     }
 
     function mostrarVistaPreviaResultado() {
@@ -709,6 +750,9 @@
           window.scrollTo({ top: 0, behavior: 'smooth' });
         } else {
           console.error('Error /postular:', JSON.stringify(json, null, 2));
+          if (res.status >= 500) {
+            throw new Error('El servidor tuvo un problema al procesar la postulación. Intenta en unos segundos o contacta al administrador.');
+          }
           throw new Error(formatearError(json.detail) || 'Error al enviar la postulación.');
         }
 
