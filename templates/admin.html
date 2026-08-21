@@ -1,5 +1,409 @@
 <!doctype html>
 <html lang="es">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Administración | Banco Guayaquil</title><link rel="stylesheet" href="/static/admin.css"><script>document.addEventListener('DOMContentLoaded',()=>document.querySelector('nav').insertAdjacentHTML('beforeend','<a href="/postulacion?vista=resultado">Vista previa del resultado</a>'));</script></head>
-<body><nav><img src="/static/logo-banco-guayaquil.png" alt="Banco Guayaquil"><span>PORTAL DE POSTULACIONES · ADMINISTRACIÓN</span><a href="/postulacion">Ver formulario</a></nav><main><header><p class="etiqueta">PANEL PRIVADO</p><h1>Gestión de talento</h1><p>Administra las preguntas del formulario y consulta la información recibida.</p></header><section class="resumen"><article><span id="total-postulantes">—</span><small>Postulaciones</small></article><article><span id="total-preguntas">—</span><small>Preguntas activas</small></article><article><span id="total-respuestas">—</span><small>Respuestas recibidas</small></article></section><section class="panel doble"><div><p class="etiqueta">CONFIGURAR FORMULARIO</p><h2>Nueva pregunta</h2><form id="nueva-pregunta"><label>Texto de la pregunta<input id="texto" required maxlength="300" placeholder="Ej.: ¿Cuál es tu expectativa salarial?"></label><label>Tipo de respuesta<select id="tipo"><option value="texto">Texto corto</option><option value="textarea">Párrafo largo</option><option value="opcion_multiple">Opción múltiple</option></select></label><label id="campo-opciones" hidden>Opciones, separadas por coma<input id="opciones" maxlength="800" placeholder="Opción A, Opción B"></label><label class="checkbox"><input type="checkbox" id="obligatorio" checked> Respuesta obligatoria</label><button>Agregar pregunta</button><p id="resultado-pregunta" role="status"></p></form></div><div><p class="etiqueta">PREGUNTAS ACTIVAS</p><h2>Campos del formulario</h2><div id="lista-preguntas" class="lista"></div></div></section><section class="panel"><div class="titulo-seccion"><div><p class="etiqueta">POSTULACIONES</p><h2>Personas registradas</h2></div><input id="buscar" placeholder="Buscar por nombre, correo o cargo"></div><div class="tabla"><table><thead><tr><th>Nombre</th><th>Correo</th><th>Cargo</th><th>Ciudad</th><th>Fecha</th><th>CV</th></tr></thead><tbody id="tabla-postulantes"></tbody></table></div></section><section class="panel"><p class="etiqueta">RESPUESTAS PERSONALIZADAS</p><h2>Resultados del formulario</h2><div class="tabla"><table><thead><tr><th>Usuario</th><th>Proveedor</th><th>Pregunta</th><th>Respuesta</th><th>Fecha</th></tr></thead><tbody id="tabla-respuestas"></tbody></table></div></section></main><script src="/static/admin.js"></script></body>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Administración | Banco Guayaquil</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --azul: #1B3A6B; --azul-mid: #2A5298; --azul-light: #EBF0FA;
+  --rosa: #E91C7E; --gris-bg: #F4F6FA; --gris-borde: #D8DCE8;
+  --gris-text: #6B7280; --negro: #111827; --blanco: #FFFFFF;
+  --verde: #059669; --rojo: #DC2626;
+}
+body { font-family: 'Inter', sans-serif; background: var(--gris-bg); color: var(--negro); min-height: 100vh; }
+
+/* NAV */
+nav {
+  background: var(--azul); padding: 0 32px; height: 60px;
+  display: flex; align-items: center; justify-content: space-between;
+  position: sticky; top: 0; z-index: 10;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.18);
+}
+nav img { height: 28px; filter: brightness(0) invert(1); }
+nav .nav-center { font-size: 11px; font-weight: 700; letter-spacing: 2px; color: rgba(255,255,255,0.6); text-transform: uppercase; }
+nav .nav-links { display: flex; gap: 8px; }
+nav a {
+  font-size: 13px; font-weight: 500; color: rgba(255,255,255,0.85);
+  background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 6px; padding: 6px 14px; text-decoration: none; transition: background 0.15s;
+}
+nav a:hover { background: rgba(255,255,255,0.2); }
+
+/* MAIN */
+main { max-width: 1200px; margin: 0 auto; padding: 32px 24px 60px; }
+
+header { margin-bottom: 28px; }
+header .etiqueta { font-size: 11px; font-weight: 700; letter-spacing: 2px; color: var(--rosa); text-transform: uppercase; margin-bottom: 6px; }
+header h1 { font-size: 28px; font-weight: 700; color: var(--azul); }
+header p { color: var(--gris-text); font-size: 14px; margin-top: 4px; }
+
+/* CARDS RESUMEN */
+.resumen { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 28px; }
+.resumen article {
+  background: var(--blanco); border-radius: 12px; padding: 24px 28px;
+  box-shadow: 0 2px 12px rgba(27,58,107,0.08);
+  display: flex; flex-direction: column; gap: 4px;
+}
+.resumen span { font-size: 36px; font-weight: 700; color: var(--azul); }
+.resumen small { font-size: 12px; font-weight: 600; color: var(--gris-text); text-transform: uppercase; letter-spacing: 0.5px; }
+
+/* PANEL */
+.panel {
+  background: var(--blanco); border-radius: 14px; padding: 28px 32px;
+  box-shadow: 0 2px 12px rgba(27,58,107,0.08); margin-bottom: 20px;
+}
+.panel.doble { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; }
+.etiqueta-sec { font-size: 11px; font-weight: 700; letter-spacing: 2px; color: var(--rosa); text-transform: uppercase; margin-bottom: 4px; }
+.panel h2 { font-size: 17px; font-weight: 700; color: var(--azul); margin-bottom: 20px; }
+
+/* FORM NUEVA PREGUNTA */
+#nueva-pregunta label { display: flex; flex-direction: column; gap: 5px; font-size: 12px; font-weight: 600; color: var(--gris-text); text-transform: uppercase; letter-spacing: 0.3px; margin-bottom: 14px; }
+#nueva-pregunta input, #nueva-pregunta select {
+  font-family: inherit; font-size: 14px; color: var(--negro);
+  background: #FAFBFD; border: 1.5px solid var(--gris-borde);
+  border-radius: 8px; padding: 10px 13px; outline: none;
+  transition: border-color 0.15s;
+}
+#nueva-pregunta input:focus, #nueva-pregunta select:focus { border-color: var(--azul-mid); }
+.checkbox-label { display: flex !important; flex-direction: row !important; align-items: center; gap: 8px !important; cursor: pointer; }
+.checkbox-label input { width: 16px; height: 16px; accent-color: var(--azul); }
+#nueva-pregunta button {
+  width: 100%; background: var(--azul); color: #fff; border: none;
+  border-radius: 8px; padding: 11px; font-size: 14px; font-weight: 600;
+  font-family: inherit; cursor: pointer; transition: background 0.15s; margin-top: 4px;
+}
+#nueva-pregunta button:hover { background: var(--azul-mid); }
+#resultado-pregunta { font-size: 13px; margin-top: 10px; min-height: 20px; }
+#resultado-pregunta.ok { color: var(--verde); }
+#resultado-pregunta.err { color: var(--rojo); }
+
+/* LISTA PREGUNTAS */
+.lista { display: flex; flex-direction: column; gap: 10px; max-height: 420px; overflow-y: auto; }
+.pregunta-card {
+  background: var(--azul-light); border-radius: 8px; padding: 12px 16px;
+  display: flex; justify-content: space-between; align-items: flex-start; gap: 12px;
+}
+.pregunta-card .q-info { flex: 1; }
+.pregunta-card .q-texto { font-size: 13px; font-weight: 600; color: var(--azul); margin-bottom: 3px; }
+.pregunta-card .q-meta { font-size: 11px; color: var(--gris-text); }
+.pregunta-card .q-tipo {
+  display: inline-block; font-size: 10px; font-weight: 700;
+  padding: 2px 8px; border-radius: 99px; margin-right: 6px;
+  background: rgba(27,58,107,0.12); color: var(--azul);
+}
+.btn-eliminar {
+  background: none; border: none; cursor: pointer; color: var(--rojo);
+  font-size: 16px; padding: 2px 6px; border-radius: 4px;
+  transition: background 0.15s; flex-shrink: 0;
+}
+.btn-eliminar:hover { background: #FEF2F2; }
+.lista-vacia { font-size: 13px; color: var(--gris-text); padding: 12px 0; text-align: center; }
+
+/* BUSCAR */
+.titulo-seccion { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 12px; }
+#buscar {
+  font-family: inherit; font-size: 13px; padding: 9px 14px;
+  border: 1.5px solid var(--gris-borde); border-radius: 8px;
+  outline: none; width: 260px; background: #FAFBFD;
+}
+#buscar:focus { border-color: var(--azul-mid); }
+
+/* TABLA */
+.tabla { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+thead th { background: var(--azul-light); color: var(--azul); font-size: 11px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; padding: 10px 14px; text-align: left; }
+tbody tr { border-bottom: 1px solid var(--gris-borde); transition: background 0.1s; }
+tbody tr:hover { background: #F8FAFF; }
+tbody td { padding: 12px 14px; color: var(--negro); vertical-align: middle; }
+tbody td.muted { color: var(--gris-text); }
+.badge {
+  display: inline-block; font-size: 11px; font-weight: 600; padding: 3px 10px;
+  border-radius: 99px; background: var(--azul-light); color: var(--azul);
+}
+a.cv-link { color: var(--azul-mid); font-weight: 600; text-decoration: none; font-size: 12px; }
+a.cv-link:hover { text-decoration: underline; }
+.sin-datos { text-align: center; padding: 28px; color: var(--gris-text); font-size: 13px; }
+
+/* LOADER */
+.loader { text-align: center; padding: 20px; color: var(--gris-text); font-size: 13px; }
+
+@media (max-width: 768px) {
+  .panel.doble { grid-template-columns: 1fr; }
+  .resumen { grid-template-columns: 1fr; }
+  #buscar { width: 100%; }
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <img src="/static/logo-banco-guayaquil.png" alt="Banco Guayaquil" onerror="this.style.display='none'">
+  <span class="nav-center">Portal de postulaciones · Administración</span>
+  <div class="nav-links">
+    <a href="/postulacion">Ver formulario</a>
+    <a href="/postulacion?vista=resultado">Vista resultado</a>
+  </div>
+</nav>
+
+<main>
+  <header>
+    <p class="etiqueta">Panel privado</p>
+    <h1>Gestión de talento</h1>
+    <p>Administra las preguntas del formulario y consulta la información recibida.</p>
+  </header>
+
+  <!-- RESUMEN -->
+  <section class="resumen">
+    <article><span id="total-postulantes">—</span><small>Postulaciones</small></article>
+    <article><span id="total-preguntas">—</span><small>Preguntas activas</small></article>
+    <article><span id="total-respuestas">—</span><small>Respuestas recibidas</small></article>
+  </section>
+
+  <!-- PREGUNTAS -->
+  <section class="panel doble">
+    <div>
+      <p class="etiqueta-sec">Configurar formulario</p>
+      <h2>Nueva pregunta</h2>
+      <form id="nueva-pregunta">
+        <label>Texto de la pregunta
+          <input id="texto" required maxlength="300" placeholder="Ej.: ¿Cuál es tu expectativa salarial?">
+        </label>
+        <label>Tipo de respuesta
+          <select id="tipo" onchange="toggleOpciones()">
+            <option value="texto">Texto corto</option>
+            <option value="textarea">Párrafo largo</option>
+            <option value="opcion_multiple">Opción múltiple</option>
+          </select>
+        </label>
+        <label id="campo-opciones" hidden>Opciones (separadas por coma)
+          <input id="opciones" maxlength="800" placeholder="Opción A, Opción B, Opción C">
+        </label>
+        <label class="checkbox-label">
+          <input type="checkbox" id="obligatorio" checked>
+          Respuesta obligatoria
+        </label>
+        <button type="submit">+ Agregar pregunta</button>
+        <p id="resultado-pregunta"></p>
+      </form>
+    </div>
+    <div>
+      <p class="etiqueta-sec">Preguntas activas</p>
+      <h2>Campos del formulario</h2>
+      <div id="lista-preguntas" class="lista">
+        <p class="loader">Cargando…</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- POSTULANTES -->
+  <section class="panel">
+    <div class="titulo-seccion">
+      <div>
+        <p class="etiqueta-sec">Postulaciones</p>
+        <h2>Personas registradas</h2>
+      </div>
+      <input id="buscar" placeholder="🔍  Buscar por nombre, correo o cargo…" oninput="filtrarPostulantes()">
+    </div>
+    <div class="tabla">
+      <table>
+        <thead>
+          <tr><th>Nombre</th><th>Correo</th><th>Cargo</th><th>Ciudad</th><th>Disponibilidad</th><th>Fecha</th></tr>
+        </thead>
+        <tbody id="tabla-postulantes"><tr><td colspan="6" class="loader">Cargando…</td></tr></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- RESPUESTAS -->
+  <section class="panel">
+    <p class="etiqueta-sec">Respuestas personalizadas</p>
+    <h2>Resultados del formulario</h2>
+    <div class="tabla">
+      <table>
+        <thead>
+          <tr><th>Postulante</th><th>Pregunta</th><th>Respuesta</th><th>Fecha</th></tr>
+        </thead>
+        <tbody id="tabla-respuestas"><tr><td colspan="4" class="loader">Cargando…</td></tr></tbody>
+      </table>
+    </div>
+  </section>
+</main>
+
+<script>
+const SUPABASE_URL  = 'https://zdspdtllckihovlmruro.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpkc3BkdGxsY2tpaG92bG1ydXJvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcxOTMwMjAsImV4cCI6MjEwMjc2OTAyMH0.VNh48HAHESVyADNaN7ihQW9ZdNsSsXtZMKE8S4ynDCU';
+
+const H = {
+  'apikey': SUPABASE_ANON,
+  'Authorization': `Bearer ${SUPABASE_ANON}`,
+  'Content-Type': 'application/json'
+};
+
+async function sbGet(tabla, params = '') {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${tabla}${params}`, { headers: H });
+  if (!res.ok) throw new Error(`Error ${res.status}`);
+  return res.json();
+}
+
+let todosPostulantes = [];
+let todasPreguntas   = [];
+
+// ── CARGAR TODO ──
+async function cargarDatos() {
+  try {
+    const [postulantes, preguntas, respuestas] = await Promise.all([
+      sbGet('postulantes', '?order=fecha_registro.desc'),
+      sbGet('preguntas',   '?activo=eq.true&order=id.asc'),
+      sbGet('respuestas',  '?order=fecha_respuesta.desc&limit=200')
+    ]);
+
+    todosPostulantes = postulantes;
+    todasPreguntas   = preguntas;
+
+    document.getElementById('total-postulantes').textContent = postulantes.length;
+    document.getElementById('total-preguntas').textContent   = preguntas.length;
+    document.getElementById('total-respuestas').textContent  = respuestas.length;
+
+    renderPreguntas(preguntas);
+    renderPostulantes(postulantes);
+    renderRespuestas(respuestas, postulantes, preguntas);
+
+  } catch (err) {
+    console.error('Error cargando datos:', err);
+  }
+}
+
+// ── PREGUNTAS ──
+function renderPreguntas(preguntas) {
+  const lista = document.getElementById('lista-preguntas');
+  if (!preguntas.length) {
+    lista.innerHTML = '<p class="lista-vacia">No hay preguntas configuradas aún.</p>';
+    return;
+  }
+  lista.innerHTML = preguntas.map(q => `
+    <div class="pregunta-card" id="q-${q.id}">
+      <div class="q-info">
+        <p class="q-texto">${q.texto}</p>
+        <p class="q-meta">
+          <span class="q-tipo">${q.tipo.replace('_', ' ')}</span>
+          ${q.obligatorio ? '· Obligatoria' : '· Opcional'}
+        </p>
+      </div>
+      <button class="btn-eliminar" onclick="eliminarPregunta(${q.id})" title="Eliminar">✕</button>
+    </div>
+  `).join('');
+}
+
+function toggleOpciones() {
+  const tipo = document.getElementById('tipo').value;
+  document.getElementById('campo-opciones').hidden = tipo !== 'opcion_multiple';
+}
+
+document.getElementById('nueva-pregunta').addEventListener('submit', async function(e) {
+  e.preventDefault();
+  const res = document.getElementById('resultado-pregunta');
+  res.className = ''; res.textContent = 'Guardando…';
+
+  const tipo = document.getElementById('tipo').value;
+  let opciones = null;
+  if (tipo === 'opcion_multiple') {
+    const raw = document.getElementById('opciones').value.trim();
+    if (!raw) { res.className = 'err'; res.textContent = 'Debes ingresar las opciones.'; return; }
+    opciones = JSON.stringify(raw.split(',').map(o => o.trim()).filter(Boolean));
+  }
+
+  try {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/preguntas`, {
+      method: 'POST',
+      headers: { ...H, 'Prefer': 'return=representation' },
+      body: JSON.stringify({
+        texto:       document.getElementById('texto').value.trim(),
+        tipo,
+        opciones,
+        obligatorio: document.getElementById('obligatorio').checked,
+        activo:      true
+      })
+    });
+    if (!r.ok) throw new Error();
+    res.className = 'ok'; res.textContent = '✓ Pregunta agregada correctamente.';
+    this.reset();
+    document.getElementById('campo-opciones').hidden = true;
+    await cargarDatos();
+  } catch {
+    res.className = 'err'; res.textContent = 'Error al guardar. Inténtalo de nuevo.';
+  }
+});
+
+async function eliminarPregunta(id) {
+  if (!confirm('¿Eliminar esta pregunta?')) return;
+  try {
+    await fetch(`${SUPABASE_URL}/rest/v1/preguntas?id=eq.${id}`, {
+      method: 'DELETE', headers: H
+    });
+    document.getElementById(`q-${id}`)?.remove();
+    const total = parseInt(document.getElementById('total-preguntas').textContent) - 1;
+    document.getElementById('total-preguntas').textContent = total;
+    todasPreguntas = todasPreguntas.filter(q => q.id !== id);
+  } catch { alert('Error al eliminar.'); }
+}
+
+// ── POSTULANTES ──
+function renderPostulantes(lista) {
+  const tbody = document.getElementById('tabla-postulantes');
+  if (!lista.length) {
+    tbody.innerHTML = '<tr><td colspan="6" class="sin-datos">No hay postulaciones registradas aún.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = lista.map(p => `
+    <tr>
+      <td><strong>${p.nombres} ${p.apellidos}</strong></td>
+      <td class="muted">${p.email}</td>
+      <td><span class="badge">${p.cargo_postula || '—'}</span></td>
+      <td class="muted">${p.ciudad || '—'}</td>
+      <td class="muted">${p.disponibilidad || '—'}</td>
+      <td class="muted">${p.fecha_registro ? new Date(p.fecha_registro).toLocaleDateString('es-EC') : '—'}</td>
+    </tr>
+  `).join('');
+}
+
+function filtrarPostulantes() {
+  const q = document.getElementById('buscar').value.toLowerCase();
+  const filtrados = todosPostulantes.filter(p =>
+    `${p.nombres} ${p.apellidos} ${p.email} ${p.cargo_postula}`.toLowerCase().includes(q)
+  );
+  renderPostulantes(filtrados);
+}
+
+// ── RESPUESTAS ──
+function renderRespuestas(respuestas, postulantes, preguntas) {
+  const tbody = document.getElementById('tabla-respuestas');
+  if (!respuestas.length) {
+    tbody.innerHTML = '<tr><td colspan="4" class="sin-datos">No hay respuestas registradas aún.</td></tr>';
+    return;
+  }
+  const mapPost = Object.fromEntries(postulantes.map(p => [p.id, p]));
+  const mapPreg = Object.fromEntries(preguntas.map(q => [q.id, q]));
+
+  tbody.innerHTML = respuestas.map(r => {
+    const p = mapPost[r.postulante_id];
+    const q = mapPreg[r.pregunta_id];
+    return `
+      <tr>
+        <td><strong>${p ? `${p.nombres} ${p.apellidos}` : `#${r.postulante_id}`}</strong><br>
+            <span style="font-size:11px;color:var(--gris-text)">${p?.email || ''}</span></td>
+        <td class="muted">${q?.texto || `Pregunta #${r.pregunta_id}`}</td>
+        <td>${r.respuesta}</td>
+        <td class="muted">${r.fecha_respuesta ? new Date(r.fecha_respuesta).toLocaleDateString('es-EC') : '—'}</td>
+      </tr>
+    `;
+  }).join('');
+}
+
+// INIT
+cargarDatos();
+</script>
+</body>
 </html>
