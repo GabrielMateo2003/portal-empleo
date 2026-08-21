@@ -7,6 +7,7 @@ import html
 import secrets
 import smtplib
 import uuid
+import logging
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from email.message import EmailMessage
@@ -27,6 +28,8 @@ from supabase import create_client
 
 BASE_DIR = Path(__file__).resolve().parent
 load_dotenv(BASE_DIR / ".env")
+
+logger = logging.getLogger("portal")
 
 MAX_FILE_SIZE = 5 * 1024 * 1024
 ALLOWED_EXTENSIONS = {".pdf", ".doc", ".docx"}
@@ -383,14 +386,14 @@ async def postular(
     disponibilidad: str = Form(..., max_length=60),
     mensaje: str = Form(..., min_length=10, max_length=1500),
     respuestas_json: str = Form("[]", max_length=10_000),
-    acepta_privacidad: bool = Form(...),
+    acepta_privacidad: str = Form(""),
     hoja_vida: UploadFile = File(...),
 ):
     content_length = request.headers.get("content-length")
     if content_length and content_length.isdigit() and int(content_length) > MAX_FILE_SIZE + 100_000:
         raise HTTPException(status_code=413, detail="La solicitud supera el tamaño permitido.")
     check_request_limit(request)
-    if not acepta_privacidad:
+    if acepta_privacidad.lower() not in ("true", "on", "1", "yes"):
         raise HTTPException(status_code=400, detail="Debes aceptar el tratamiento de tus datos.")
     if not EMAIL_PATTERN.fullmatch(email.strip()):
         raise HTTPException(status_code=400, detail="Ingresa un correo electrónico válido.")
@@ -430,7 +433,8 @@ async def postular(
             {"content-type": hoja_vida.content_type or "application/octet-stream", "upsert": "false"},
         )
     except Exception as error:
-        raise HTTPException(status_code=503, detail="No fue posible guardar la hoja de vida.") from error
+        logger.exception("Error subiendo CV a Storage: %s", error)
+        raise HTTPException(status_code=503, detail="No fue posible guardar la hoja de vida. Verifica que el archivo sea válido e intenta nuevamente.") from error
     fecha = datetime.now(timezone.utc).replace(tzinfo=None)
     try:
         with get_db() as conn:
@@ -453,10 +457,15 @@ async def postular(
             conn.commit()
     except IntegrityError:
         get_storage().remove([ruta_cv])
-        raise HTTPException(status_code=409, detail="Ya hay una postulación con ese correo.")
-    except DatabaseError:
+        raise HTTPException(status_code=409, detail="Ya existe una postulación registrada con ese correo.")
+    except DatabaseError as error:
+        logger.exception("Error en base de datos al guardar postulacion: %s", error)
         get_storage().remove([ruta_cv])
-        raise
+        raise HTTPException(status_code=503, detail="Error al guardar la postulacion en la base de datos. Intenta nuevamente.") from error
+    except Exception as error:
+        logger.exception("Error inesperado en /postular: %s", error)
+        get_storage().remove([ruta_cv])
+        raise HTTPException(status_code=500, detail="Ocurrio un error inesperado. Intenta nuevamente o contacta al administrador.") from error
     enviar_aviso(
         {"nombres": nombres, "apellidos": apellidos, "email": email, "telefono": telefono,
          "ciudad": ciudad, "cargo_postula": cargo_postula, "experiencia": experiencia,
@@ -464,7 +473,7 @@ async def postular(
         contenido,
         ruta_cv,
     )
-    return {"ok": True, "mensaje": "Tu postulación fue enviada correctamente."}
+    return {"ok": True, "mensaje": "Tu postulacion fue enviada correctamente."}
 
 @app.get("/admin", response_class=HTMLResponse)
 def admin(_: str = Depends(admin_required)):
