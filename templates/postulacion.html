@@ -621,7 +621,7 @@
         const data = await res.json();
         renderPreguntas(data.length ? data : PREGUNTAS_DEFAULT);
       } catch (err) {
-        console.warn('Usando preguntas por defecto:', err.message);
+        console.warn(err.message);
         renderPreguntas(PREGUNTAS_DEFAULT);
       }
     }
@@ -689,75 +689,34 @@
       try {
         const fd = new FormData(this);
 
-        // 1. Guardar postulante en Supabase
-        const postulante = {
-          nombres:         fd.get('nombres'),
-          apellidos:       fd.get('apellidos'),
-          email:           fd.get('email'),
-          telefono:        fd.get('telefono'),
-          ciudad:          fd.get('ciudad'),
-          cargo_postula:   fd.get('cargo_postula'),
-          experiencia:     fd.get('experiencia'),
-          nivel_educacion: fd.get('nivel_educacion') || null,
-          disponibilidad:  fd.get('disponibilidad'),
-          mensaje:         fd.get('mensaje'),
-          area:            fd.get('area') || null,
-        };
-
-        const resPost = await fetch(`${SUPABASE_URL}/rest/v1/postulantes`, {
-          method: 'POST',
-          headers: {
-            'apikey':        SUPABASE_ANON,
-            'Authorization': `Bearer ${SUPABASE_ANON}`,
-            'Content-Type':  'application/json',
-            'Prefer':        'return=representation'
-          },
-          body: JSON.stringify(postulante)
-        });
-
-        if (!resPost.ok) {
-          const err = await resPost.json().catch(() => ({}));
-          throw new Error(err.message || 'Error al guardar postulación');
-        }
-
-        const [nuevoPostulante] = await resPost.json();
-        const postulante_id = nuevoPostulante.id;
-
-        // 2. Guardar respuestas a preguntas adicionales
         const respuestas = [];
         document.querySelectorAll('[data-pid]').forEach(el => {
           if (el.value.trim()) {
-            respuestas.push({
-              postulante_id: postulante_id,
-              pregunta_id:   parseInt(el.dataset.pid),
-              respuesta:     el.value.trim()
-            });
+            respuestas.push({ pregunta_id: el.dataset.pid, respuesta: el.value.trim() });
           }
         });
+        fd.append('respuestas_json', JSON.stringify(respuestas));
 
-        if (respuestas.length > 0) {
-          await fetch(`${SUPABASE_URL}/rest/v1/respuestas`, {
-            method: 'POST',
-            headers: {
-              'apikey':        SUPABASE_ANON,
-              'Authorization': `Bearer ${SUPABASE_ANON}`,
-              'Content-Type':  'application/json',
-              'Prefer':        'return=minimal'
-            },
-            body: JSON.stringify(respuestas)
-          });
+        const res = await fetch('/postular', {
+          method: 'POST',
+          credentials: 'same-origin',
+          body: fd
+        });
+
+        const json = await res.json().catch(() => ({}));
+
+        if (res.ok) {
+          document.getElementById('formulario').style.display = 'none';
+          document.querySelector('.stepper').style.display = 'none';
+          const final = document.getElementById('pantalla-final');
+          final.classList.add('activa');
+          final.style.display = 'block';
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        } else {
+          throw new Error(json.detail || 'Error al enviar la postulación.');
         }
 
-        // 3. Mostrar pantalla de éxito
-        document.getElementById('formulario').style.display = 'none';
-        document.querySelector('.stepper').style.display = 'none';
-        const final = document.getElementById('pantalla-final');
-        final.classList.add('activa');
-        final.style.display = 'block';
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-
       } catch (err) {
-        console.error('Error al enviar:', err);
         elError.textContent = err.message || 'Error de conexión. Verifica tu internet e inténtalo nuevamente.';
         elError.classList.add('visible');
         btn.disabled = false;
