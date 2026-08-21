@@ -130,10 +130,81 @@ a.cv-link:hover { text-decoration: underline; }
 /* LOADER */
 .loader { text-align: center; padding: 20px; color: var(--gris-text); font-size: 13px; }
 
+/* FILTRO RESPUESTAS */
+.filtro-resp { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px; align-items: center; }
+#buscar-resp {
+  font-family: inherit; font-size: 13px; padding: 9px 14px;
+  border: 1.5px solid var(--gris-borde); border-radius: 8px;
+  outline: none; flex: 1; min-width: 220px; background: #FAFBFD;
+}
+#buscar-resp:focus { border-color: var(--azul-mid); }
+#contador-resp { font-size: 12px; color: var(--gris-text); white-space: nowrap; }
+
+/* TARJETAS DE USUARIO */
+.usuario-card {
+  border: 1.5px solid var(--gris-borde); border-radius: 12px;
+  overflow: hidden; margin-bottom: 12px; background: var(--blanco);
+  transition: border-color 0.15s;
+}
+.usuario-card:hover { border-color: var(--azul-mid); }
+.usuario-header {
+  display: flex; align-items: center; gap: 16px;
+  padding: 16px 20px; cursor: pointer; user-select: none;
+}
+.usuario-header:hover { background: #F8FAFF; }
+.usuario-avatar {
+  width: 40px; height: 40px; border-radius: 50%;
+  background: var(--azul); color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 15px; font-weight: 700; flex-shrink: 0;
+}
+.usuario-info { flex: 1; min-width: 0; }
+.usuario-nombre { font-size: 14px; font-weight: 700; color: var(--azul); }
+.usuario-meta { font-size: 12px; color: var(--gris-text); margin-top: 2px; display: flex; flex-wrap: wrap; gap: 8px; }
+.usuario-badges { display: flex; gap: 6px; flex-shrink: 0; flex-wrap: wrap; align-items: center; }
+.chip-resp { font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 99px; }
+.chip-area { background: var(--azul-light); color: var(--azul); }
+.chip-cargo { background: #F0FDF4; color: var(--verde); }
+.chip-count { background: #FFF7ED; color: #C2410C; }
+.usuario-toggle { font-size: 18px; color: var(--gris-text); transition: transform 0.2s; flex-shrink: 0; }
+.usuario-card.abierta .usuario-toggle { transform: rotate(180deg); }
+.usuario-body { display: none; border-top: 1px solid var(--gris-borde); }
+.usuario-card.abierta .usuario-body { display: block; }
+.datos-fila {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px; padding: 16px 20px; background: #FAFBFD;
+  border-bottom: 1px solid var(--gris-borde);
+}
+.dato-item { display: flex; flex-direction: column; gap: 2px; }
+.dato-label { font-size: 10px; font-weight: 700; color: var(--gris-text); text-transform: uppercase; letter-spacing: 0.5px; }
+.dato-val { font-size: 13px; color: var(--negro); }
+.respuestas-lista { padding: 16px 20px; display: flex; flex-direction: column; gap: 14px; }
+.resp-item { display: flex; flex-direction: column; gap: 4px; }
+.resp-pregunta { font-size: 12px; font-weight: 600; color: var(--azul-mid); }
+.resp-texto {
+  font-size: 13px; color: var(--negro); background: var(--azul-light);
+  border-radius: 8px; padding: 10px 14px; line-height: 1.5;
+}
+.sin-respuestas { font-size: 13px; color: var(--gris-text); padding: 16px 20px; }
+.usuario-footer {
+  padding: 10px 20px 14px; display: flex; gap: 10px; flex-wrap: wrap;
+  border-top: 1px solid var(--gris-borde); background: #FAFBFD;
+}
+.btn-cv {
+  font-size: 12px; font-weight: 600; color: var(--azul-mid);
+  text-decoration: none; padding: 5px 12px;
+  border: 1.5px solid var(--azul-mid); border-radius: 6px;
+  transition: background 0.15s;
+}
+.btn-cv:hover { background: var(--azul-light); }
+.sin-datos-resp { text-align: center; padding: 40px; color: var(--gris-text); font-size: 13px; }
+
 @media (max-width: 768px) {
   .panel.doble { grid-template-columns: 1fr; }
   .resumen { grid-template-columns: 1fr; }
   #buscar { width: 100%; }
+  .datos-fila { grid-template-columns: 1fr 1fr; }
+  .usuario-badges { display: none; }
 }
 </style>
 </head>
@@ -220,15 +291,12 @@ a.cv-link:hover { text-decoration: underline; }
   <!-- RESPUESTAS -->
   <section class="panel">
     <p class="etiqueta-sec">Respuestas personalizadas</p>
-    <h2>Resultados del formulario</h2>
-    <div class="tabla">
-      <table>
-        <thead>
-          <tr><th>Postulante</th><th>Pregunta</th><th>Respuesta</th><th>Fecha</th></tr>
-        </thead>
-        <tbody id="tabla-respuestas"><tr><td colspan="4" class="loader">Cargando…</td></tr></tbody>
-      </table>
+    <h2>Fichas por postulante</h2>
+    <div class="filtro-resp">
+      <input id="buscar-resp" placeholder="Buscar por nombre, correo, cargo o área..." oninput="filtrarRespuestas()">
+      <span id="contador-resp"></span>
     </div>
+    <div id="contenedor-respuestas"><p class="loader">Cargando...</p></div>
   </section>
 </main>
 
@@ -262,6 +330,7 @@ async function cargarDatos() {
 
     todosPostulantes = postulantes;
     todasPreguntas   = preguntas;
+    datosRespuestas  = { postulantes, respuestas, preguntas };
 
     document.getElementById('total-postulantes').textContent = postulantes.length;
     document.getElementById('total-preguntas').textContent   = preguntas.length;
@@ -269,7 +338,7 @@ async function cargarDatos() {
 
     renderPreguntas(preguntas);
     renderPostulantes(postulantes);
-    renderRespuestas(respuestas, postulantes, preguntas);
+    renderRespuestas(postulantes, respuestas, preguntas);
 
   } catch (err) {
     console.error('Error cargando datos:', err);
@@ -378,28 +447,106 @@ function filtrarPostulantes() {
 }
 
 // ── RESPUESTAS ──
-function renderRespuestas(respuestas, postulantes, preguntas) {
-  const tbody = document.getElementById('tabla-respuestas');
-  if (!respuestas.length) {
-    tbody.innerHTML = '<tr><td colspan="4" class="sin-datos">No hay respuestas registradas aún.</td></tr>';
+let datosRespuestas = { postulantes: [], respuestas: [], preguntas: [] };
+
+function iniciales(nombres, apellidos) {
+  const n = (nombres || '').trim()[0] || '';
+  const a = (apellidos || '').trim()[0] || '';
+  return (n + a).toUpperCase() || '?';
+}
+
+function fmt(fecha) {
+  if (!fecha) return '—';
+  return new Date(fecha).toLocaleDateString('es-EC', { day: '2-digit', month: 'short', year: 'numeric' });
+}
+
+function renderRespuestas(postulantes, respuestas, preguntas) {
+  const cont = document.getElementById('contenedor-respuestas');
+  const mapPreg = Object.fromEntries(preguntas.map(q => [q.id, q]));
+  const mapResp = {};
+  respuestas.forEach(r => {
+    if (!mapResp[r.postulante_id]) mapResp[r.postulante_id] = [];
+    mapResp[r.postulante_id].push(r);
+  });
+
+  if (!postulantes.length) {
+    cont.innerHTML = '<p class="sin-datos-resp">No hay postulaciones registradas.</p>';
+    document.getElementById('contador-resp').textContent = '';
     return;
   }
-  const mapPost = Object.fromEntries(postulantes.map(p => [p.id, p]));
-  const mapPreg = Object.fromEntries(preguntas.map(q => [q.id, q]));
 
-  tbody.innerHTML = respuestas.map(r => {
-    const p = mapPost[r.postulante_id];
-    const q = mapPreg[r.pregunta_id];
+  document.getElementById('contador-resp').textContent = `${postulantes.length} postulante${postulantes.length !== 1 ? 's' : ''}`;
+
+  cont.innerHTML = postulantes.map((p, idx) => {
+    const resps = mapResp[p.id] || [];
+    const ini = iniciales(p.nombres, p.apellidos);
+
+    const datosHTML = `
+      <div class="datos-fila">
+        <div class="dato-item"><span class="dato-label">Correo</span><span class="dato-val">${p.email || '—'}</span></div>
+        <div class="dato-item"><span class="dato-label">Telefono</span><span class="dato-val">${p.telefono || '—'}</span></div>
+        <div class="dato-item"><span class="dato-label">Ciudad</span><span class="dato-val">${p.ciudad || '—'}</span></div>
+        <div class="dato-item"><span class="dato-label">Experiencia</span><span class="dato-val">${p.experiencia || '—'}</span></div>
+        <div class="dato-item"><span class="dato-label">Educacion</span><span class="dato-val">${p.nivel_educacion || '—'}</span></div>
+        <div class="dato-item"><span class="dato-label">Disponibilidad</span><span class="dato-val">${p.disponibilidad || '—'}</span></div>
+        <div class="dato-item"><span class="dato-label">Registro</span><span class="dato-val">${fmt(p.fecha_registro)}</span></div>
+        ${p.mensaje ? `<div class="dato-item" style="grid-column:1/-1"><span class="dato-label">Mensaje</span><span class="dato-val">${p.mensaje}</span></div>` : ''}
+      </div>`;
+
+    const respsHTML = resps.length
+      ? `<div class="respuestas-lista">${resps.map(r => {
+          const q = mapPreg[r.pregunta_id];
+          return `<div class="resp-item">
+            <span class="resp-pregunta">${q ? q.texto : 'Pregunta #' + r.pregunta_id}</span>
+            <span class="resp-texto">${r.respuesta}</span>
+          </div>`;
+        }).join('')}</div>`
+      : '<p class="sin-respuestas">Este postulante no tiene respuestas adicionales registradas.</p>';
+
+    const cvHTML = p.id
+      ? `<a class="btn-cv" href="/api/postulantes/${p.id}/cv" target="_blank">Descargar CV</a>`
+      : '';
+
     return `
-      <tr>
-        <td><strong>${p ? `${p.nombres} ${p.apellidos}` : `#${r.postulante_id}`}</strong><br>
-            <span style="font-size:11px;color:var(--gris-text)">${p?.email || ''}</span></td>
-        <td class="muted">${q?.texto || `Pregunta #${r.pregunta_id}`}</td>
-        <td>${r.respuesta}</td>
-        <td class="muted">${r.fecha_respuesta ? new Date(r.fecha_respuesta).toLocaleDateString('es-EC') : '—'}</td>
-      </tr>
-    `;
+      <div class="usuario-card" id="uc-${p.id}">
+        <div class="usuario-header" onclick="toggleCard(${p.id})">
+          <div class="usuario-avatar">${ini}</div>
+          <div class="usuario-info">
+            <div class="usuario-nombre">${p.nombres || ''} ${p.apellidos || ''}</div>
+            <div class="usuario-meta">
+              <span>${p.email || '—'}</span>
+              ${p.telefono ? `<span>${p.telefono}</span>` : ''}
+              ${p.ciudad ? `<span>${p.ciudad}</span>` : ''}
+            </div>
+          </div>
+          <div class="usuario-badges">
+            ${p.area ? `<span class="chip-resp chip-area">${p.area}</span>` : ''}
+            ${p.cargo_postula ? `<span class="chip-resp chip-cargo">${p.cargo_postula}</span>` : ''}
+            ${resps.length ? `<span class="chip-resp chip-count">${resps.length} resp.</span>` : ''}
+          </div>
+          <span class="usuario-toggle">&#x25BE;</span>
+        </div>
+        <div class="usuario-body">
+          ${datosHTML}
+          ${respsHTML}
+          <div class="usuario-footer">${cvHTML}</div>
+        </div>
+      </div>`;
   }).join('');
+}
+
+function toggleCard(id) {
+  document.getElementById('uc-' + id)?.classList.toggle('abierta');
+}
+
+function filtrarRespuestas() {
+  const q = document.getElementById('buscar-resp').value.toLowerCase();
+  const filtrados = q
+    ? datosRespuestas.postulantes.filter(p =>
+        `${p.nombres} ${p.apellidos} ${p.email} ${p.cargo_postula} ${p.area}`.toLowerCase().includes(q)
+      )
+    : datosRespuestas.postulantes;
+  renderRespuestas(filtrados, datosRespuestas.respuestas, datosRespuestas.preguntas);
 }
 
 // INIT
