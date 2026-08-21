@@ -304,7 +304,7 @@
 
   <!-- FORMULARIO -->
   <div class="contenedor">
-    <form id="formulario" enctype="multipart/form-data">
+    <form id="formulario" enctype="multipart/form-data" novalidate>
 
       <!-- PASO 1: DATOS PERSONALES -->
       <div class="seccion activa" id="paso1">
@@ -673,11 +673,6 @@
 
     document.getElementById('formulario').addEventListener('submit', async function(e) {
       e.preventDefault();
-
-      if (!this.checkValidity()) {
-        this.reportValidity();
-        return;
-      }
 
       const btn = document.getElementById('enviar');
       btn.disabled = true;
