@@ -566,9 +566,23 @@
       document.getElementById('area-error').classList.remove('visible');
     }
 
+    const SUPABASE_URL  = 'https://zdspdtllckihovlmruro.supabase.co';
+    const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpkc3BkdGxsY2tpaG92bG1ydXJvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcxOTMwMjAsImV4cCI6MjEwMjc2OTAyMH0.VNh48HAHESVyADNaN7ihQW9ZdNsSsXtZMKE8S4ynDCU';
+
     async function cargarPreguntas() {
       try {
-        const res  = await fetch('/api/preguntas');
+        const res = await fetch(
+          `${SUPABASE_URL}/rest/v1/preguntas?activo=eq.true&order=id.asc`,
+          {
+            headers: {
+              'apikey': SUPABASE_ANON,
+              'Authorization': `Bearer ${SUPABASE_ANON}`,
+              'Content-Type': 'application/json'
+            }
+          }
+        );
+
+        if (!res.ok) throw new Error('Error al cargar');
         const data = await res.json();
         const cont = document.getElementById('contenedor-preguntas');
         document.getElementById('cargando-preguntas').remove();
@@ -593,7 +607,10 @@
               <div class="campo"><textarea data-pid="${q.id}" maxlength="1500"
               ${q.obligatorio ? 'required' : ''} placeholder="Tu respuesta…"></textarea></div>`;
           } else if (q.tipo === 'opcion_multiple') {
-            const ops = q.opciones.map(op =>
+            const opciones = typeof q.opciones === 'string'
+              ? JSON.parse(q.opciones)
+              : q.opciones;
+            const ops = opciones.map(op =>
               `<option value="${op}">${op}</option>`).join('');
             div.innerHTML = `<p class="q-texto">${q.texto}${oblig}</p>
               <div class="campo"><div class="select-wrap"><select data-pid="${q.id}"
@@ -603,7 +620,8 @@
           }
           cont.appendChild(div);
         });
-      } catch {
+      } catch (err) {
+        console.error('Error preguntas:', err);
         document.getElementById('cargando-preguntas').textContent =
           'No se pudieron cargar las preguntas. Puedes continuar.';
       }
