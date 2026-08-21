@@ -267,7 +267,7 @@ def inicio(request: Request):
 
 @app.get("/postulacion", response_class=HTMLResponse)
 def postulacion(_: dict = Depends(usuario_requerido)):
-    return (BASE_DIR / "templates" / "index.html").read_text(encoding="utf-8")
+    return (BASE_DIR / "templates" / "postulacion.html").read_text(encoding="utf-8")
 
 @app.get("/acceso/educativo", response_class=HTMLResponse)
 def acceso_educativo():
@@ -492,7 +492,7 @@ def listar_postulantes(_: str = Depends(admin_required)):
     return rows
 
 @app.get("/api/preguntas")
-def listar_preguntas_publicas(_: dict = Depends(usuario_requerido)):
+def listar_preguntas_publicas():
     return obtener_preguntas_activas()
 
 @app.get("/api/admin/preguntas")
