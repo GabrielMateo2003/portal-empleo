@@ -569,61 +569,60 @@
     const SUPABASE_URL  = 'https://zdspdtllckihovlmruro.supabase.co';
     const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpkc3BkdGxsY2tpaG92bG1ydXJvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcxOTMwMjAsImV4cCI6MjEwMjc2OTAyMH0.VNh48HAHESVyADNaN7ihQW9ZdNsSsXtZMKE8S4ynDCU';
 
+    const PREGUNTAS_DEFAULT = [
+      { id: 'p1', texto: '¿Cuál es tu expectativa salarial mensual en dólares?', tipo: 'texto', opciones: null, obligatorio: true },
+      { id: 'p2', texto: '¿Cuántos años de experiencia tienes en el sector financiero o bancario?', tipo: 'opcion_multiple', opciones: ['Menos de 1 año','1 a 3 años','3 a 5 años','Más de 5 años'], obligatorio: true },
+      { id: 'p3', texto: '¿Qué herramientas de software financiero o bancario dominas?', tipo: 'textarea', opciones: null, obligatorio: true },
+      { id: 'p4', texto: '¿Cuál es tu nivel de inglés?', tipo: 'opcion_multiple', opciones: ['Básico','Intermedio','Avanzado','Nativo'], obligatorio: true },
+      { id: 'p5', texto: '¿Has trabajado anteriormente en atención al cliente? Describe brevemente tu experiencia.', tipo: 'textarea', opciones: null, obligatorio: true },
+      { id: 'p6', texto: '¿Cuál es tu disponibilidad para trabajar en horarios rotativos o fines de semana?', tipo: 'opcion_multiple', opciones: ['Disponibilidad total','Solo horario diurno','Solo horario nocturno','No disponible para fines de semana'], obligatorio: true },
+      { id: 'p7', texto: '¿Por qué te interesa trabajar específicamente en el sector bancario y qué valor puedes aportar a Banco Guayaquil?', tipo: 'textarea', opciones: null, obligatorio: true }
+    ];
+
+    function renderPreguntas(data) {
+      const cont = document.getElementById('contenedor-preguntas');
+      const loader = document.getElementById('cargando-preguntas');
+      if (loader) loader.remove();
+
+      window._preguntas = data;
+      data.forEach(q => {
+        const div = document.createElement('div');
+        div.className = 'pregunta-item';
+        const oblig = q.obligatorio ? '<span class="q-oblig">* Obligatoria</span>' : '';
+
+        if (q.tipo === 'texto') {
+          div.innerHTML = `<p class="q-texto">${q.texto}${oblig}</p>
+            <div class="campo"><input type="text" data-pid="${q.id}" maxlength="500"
+            ${q.obligatorio ? 'required' : ''} placeholder="Tu respuesta…"></div>`;
+        } else if (q.tipo === 'textarea') {
+          div.innerHTML = `<p class="q-texto">${q.texto}${oblig}</p>
+            <div class="campo"><textarea data-pid="${q.id}" maxlength="1500"
+            ${q.obligatorio ? 'required' : ''} placeholder="Tu respuesta…"></textarea></div>`;
+        } else if (q.tipo === 'opcion_multiple') {
+          const opciones = typeof q.opciones === 'string' ? JSON.parse(q.opciones) : q.opciones;
+          const ops = opciones.map(op => `<option value="${op}">${op}</option>`).join('');
+          div.innerHTML = `<p class="q-texto">${q.texto}${oblig}</p>
+            <div class="campo"><div class="select-wrap"><select data-pid="${q.id}"
+            ${q.obligatorio ? 'required' : ''}>
+              <option value="">Selecciona…</option>${ops}
+            </select></div></div>`;
+        }
+        cont.appendChild(div);
+      });
+    }
+
     async function cargarPreguntas() {
       try {
         const res = await fetch(
           `${SUPABASE_URL}/rest/v1/preguntas?activo=eq.true&order=id.asc`,
-          {
-            headers: {
-              'apikey': SUPABASE_ANON,
-              'Authorization': `Bearer ${SUPABASE_ANON}`,
-              'Content-Type': 'application/json'
-            }
-          }
+          { headers: { 'apikey': SUPABASE_ANON, 'Authorization': `Bearer ${SUPABASE_ANON}` } }
         );
-
         if (!res.ok) throw new Error('Error al cargar');
         const data = await res.json();
-        const cont = document.getElementById('contenedor-preguntas');
-        document.getElementById('cargando-preguntas').remove();
-
-        if (!data.length) {
-          document.getElementById('sin-preguntas').style.display = 'block';
-          return;
-        }
-
-        window._preguntas = data;
-        data.forEach(q => {
-          const div = document.createElement('div');
-          div.className = 'pregunta-item';
-          const oblig = q.obligatorio ? '<span class="q-oblig">* Obligatoria</span>' : '';
-
-          if (q.tipo === 'texto') {
-            div.innerHTML = `<p class="q-texto">${q.texto}${oblig}</p>
-              <div class="campo"><input type="text" data-pid="${q.id}" maxlength="500"
-              ${q.obligatorio ? 'required' : ''} placeholder="Tu respuesta…"></div>`;
-          } else if (q.tipo === 'textarea') {
-            div.innerHTML = `<p class="q-texto">${q.texto}${oblig}</p>
-              <div class="campo"><textarea data-pid="${q.id}" maxlength="1500"
-              ${q.obligatorio ? 'required' : ''} placeholder="Tu respuesta…"></textarea></div>`;
-          } else if (q.tipo === 'opcion_multiple') {
-            const opciones = typeof q.opciones === 'string'
-              ? JSON.parse(q.opciones)
-              : q.opciones;
-            const ops = opciones.map(op =>
-              `<option value="${op}">${op}</option>`).join('');
-            div.innerHTML = `<p class="q-texto">${q.texto}${oblig}</p>
-              <div class="campo"><div class="select-wrap"><select data-pid="${q.id}"
-              ${q.obligatorio ? 'required' : ''}>
-                <option value="">Selecciona…</option>${ops}
-              </select></div></div>`;
-          }
-          cont.appendChild(div);
-        });
+        renderPreguntas(data.length ? data : PREGUNTAS_DEFAULT);
       } catch (err) {
-        console.error('Error preguntas:', err);
-        document.getElementById('cargando-preguntas').textContent =
-          'No se pudieron cargar las preguntas. Puedes continuar.';
+        console.warn('Usando preguntas por defecto:', err.message);
+        renderPreguntas(PREGUNTAS_DEFAULT);
       }
     }
     cargarPreguntas();
